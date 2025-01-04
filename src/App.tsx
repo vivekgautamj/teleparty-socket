@@ -103,8 +103,8 @@ const App = () => {
 
       try {
         // Call joinChatRoom and store the result in 'messages'
-        const messages = await clientRef.current.joinChatRoom(nickname, roomId);
-        const previousMsgs = messages?.map(
+        const oldMessages = await clientRef.current.joinChatRoom(nickname, roomId);
+        const previousMsgs = oldMessages?.map(
           (msg: {
             body: any;
             userNickname: any;
@@ -121,6 +121,7 @@ const App = () => {
             };
           }
         );
+        console.log(">>", previousMsgs)
         setMessages((prevMessages) => [...prevMessages, previousMsgs]);
       } catch (error) {
         console.error("Error joining room:", error);
@@ -170,19 +171,6 @@ const App = () => {
       console.log("Nickname set:", userNickname);
     } else {
       console.log("Nickname not set");
-    }
-  };
-
-  // Function to handle image upload
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Convert the image to a URL that can be used as an icon
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUserIcon(reader.result as string); // Set the image URL as the user icon
-      };
-      reader.readAsDataURL(file); // Convert file to base64 URL
     }
   };
 
@@ -246,25 +234,6 @@ const App = () => {
             />
           </div>
         )}
-
-        <div>
-          <h2>User Profile</h2>
-
-          {/* Input for file upload */}
-          <input type="file" accept="image/*" onChange={handleImageUpload} />
-
-          {/* Show the uploaded image */}
-          {userIcon && (
-            <div>
-              <h3>Uploaded Icon:</h3>
-              <img
-                src={userIcon}
-                alt="User Icon"
-                style={{ width: 100, height: 100, borderRadius: "50%" }}
-              />
-            </div>
-          )}
-        </div>
 
         {!nickname ? (
           <button
