@@ -1,6 +1,8 @@
 # Project Demo 
 [Demo video ](https://jumpshare.com/s/bDDP3ljla9NMTaq67CQE)
 
+[Live Demo Link ](https://vivekgautamj.github.io/teleparty-socket/)
+
 
 # Project Details 
 
