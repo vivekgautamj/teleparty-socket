@@ -17,17 +17,18 @@ interface Message {
   isSystemMessage: boolean;
   time: string;
   timestamp: string;
+  icon?: string; // Optional user icon for message
 }
 
 const App = () => {
   const [nickname, setNickname] = useState<string | null>(null);
   const [roomIds, setRoomIds] = useState<string[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]); // Type the messages state correctly
   const [joinRoomId, setJoinRoomId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const [userList, setUserList] = useState<User[]>([]);
+  const [userList, setUserList] = useState<User[]>([]); // Type the userList state correctly
   const [typing, setTyping] = useState<boolean>(false);
   const [userIcon, setUserIcon] = useState<string | null>(null);
 
@@ -51,7 +52,7 @@ const App = () => {
             break;
           }
           case "userList": {
-            setUserList(data as User[]);
+            setUserList(data as User[]); // Cast the data to User[]
             break;
           }
           case "sendMessage": {
@@ -60,6 +61,8 @@ const App = () => {
               nickname: data.userNickname,
               isSystemMessage: data.isSystemMessage,
               time: new Date(data.timestamp).toLocaleString(),
+              timestamp: data.timestamp, // Ensure timestamp is set
+              icon: data.userIcon || "", // Use default empty string if icon is undefined
             };
             setMessages((prevMessages) => [...prevMessages, msgPayload]);
             break;
@@ -102,27 +105,29 @@ const App = () => {
       setMessages([]); // Clear previous messages
 
       try {
-        // Call joinChatRoom and store the result in 'messages'
+        // Call joinChatRoom and store the result in 'oldMessages'
         const oldMessages = await clientRef.current.joinChatRoom(nickname, roomId);
-        const previousMsgs = oldMessages?.map(
-          (msg: {
-            body: any;
-            userNickname: any;
-            isSystemMessage: any;
-            timestamp: string;
-            userIcon: any;
-          }) => {
-            return {
-              message: msg.body,
-              nickname: msg.userNickname,
-              isSystemMessage: msg.isSystemMessage,
-              time: new Date(msg.timestamp).toLocaleString(),
-              icon: msg.userIcon,
-            };
-          }
-        );
-        console.log(">>", previousMsgs)
-        setMessages((prevMessages) => [...prevMessages, previousMsgs]);
+
+        // Check if oldMessages is an array before mapping
+        console.log("<>",oldMessages.messages)
+        if (Array.isArray(oldMessages.messages)) {
+          const previousMsgs = oldMessages.messages.map(
+            (msg) => {
+              return {
+                message: msg.body,
+                nickname: msg.userNickname,
+                isSystemMessage: msg.isSystemMessage,
+                time: new Date(msg.timestamp).toLocaleString(),
+                timestamp: msg.timestamp,
+                icon: msg.userIcon || "", // Use default empty string if icon is undefined
+              };
+            }
+          );
+          // Flatten and update messages
+          setMessages((prevMessages) => [...prevMessages, ...previousMsgs]);
+        } else {
+          console.error("Expected an array of messages, but got:", oldMessages);
+        }
       } catch (error) {
         console.error("Error joining room:", error);
       }
