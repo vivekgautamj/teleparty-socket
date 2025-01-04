@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://vivekgautamj.github.io/teleparty-scoket",
+  "homepage": "https://vivekgautamj.github.io/teleparty-socket",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

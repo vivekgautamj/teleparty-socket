@@ -16,11 +16,11 @@ interface Message {
   nickname: string;
   isSystemMessage: boolean;
   time: string;
+  timestamp: string;
 }
 
 const App = () => {
   const [nickname, setNickname] = useState<string | null>(null);
-  const [userIcon, setUserIcon] = useState<string | null>(null);
   const [roomIds, setRoomIds] = useState<string[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,6 +29,7 @@ const App = () => {
   const [userId, setUserId] = useState<string>("");
   const [userList, setUserList] = useState<User[]>([]);
   const [typing, setTyping] = useState<boolean>(false);
+  const [userIcon, setUserIcon] = useState<string | null>(null);
 
   // Use a ref to store the client instance
   const clientRef = useRef<TelepartyClient | null>(null);
@@ -101,8 +102,26 @@ const App = () => {
       setMessages([]); // Clear previous messages
 
       try {
-        await clientRef.current.joinChatRoom(nickname, roomId, "");
-        console.log(`Joined room ${roomId}`);
+        // Call joinChatRoom and store the result in 'messages'
+        const messages = await clientRef.current.joinChatRoom(nickname, roomId);
+        const previousMsgs = messages?.map(
+          (msg: {
+            body: any;
+            userNickname: any;
+            isSystemMessage: any;
+            timestamp: string;
+            userIcon: any;
+          }) => {
+            return {
+              message: msg.body,
+              nickname: msg.userNickname,
+              isSystemMessage: msg.isSystemMessage,
+              time: new Date(msg.timestamp).toLocaleString(),
+              icon: msg.userIcon,
+            };
+          }
+        );
+        setMessages((prevMessages) => [...prevMessages, previousMsgs]);
       } catch (error) {
         console.error("Error joining room:", error);
       }
@@ -113,14 +132,21 @@ const App = () => {
   };
 
   const handleSendMessage = (setTypingPresence = false) => {
-    if (!nickname || !selectedRoomId || (!messageInput.trim() && !setTypingPresence)) {
-      console.log("You must be in a room, have a nickname, and type a message to send.");
+    if (
+      !nickname ||
+      !selectedRoomId ||
+      (!messageInput.trim() && !setTypingPresence)
+    ) {
+      console.log(
+        "You must be in a room, have a nickname, and type a message to send."
+      );
       return;
     }
 
     const message = {
       body: setTypingPresence ? "" : messageInput,
       isSystemMessage: setTypingPresence,
+      userIcon,
     };
 
     const typeOfMessage = setTypingPresence
@@ -147,10 +173,35 @@ const App = () => {
     }
   };
 
+  // Function to handle image upload
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Convert the image to a URL that can be used as an icon
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUserIcon(reader.result as string); // Set the image URL as the user icon
+      };
+      reader.readAsDataURL(file); // Convert file to base64 URL
+    }
+  };
+
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "20px" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        padding: "20px",
+      }}
+    >
       {/* Left Panel - Room List */}
-      <div style={{ width: "30%", borderRight: "2px solid #ccc", paddingRight: "20px" }}>
+      <div
+        style={{
+          width: "30%",
+          borderRight: "2px solid #ccc",
+          paddingRight: "20px",
+        }}
+      >
         <h2>Created Rooms</h2>
         <ul>
           {roomIds.length === 0 ? (
@@ -163,7 +214,8 @@ const App = () => {
                   style={{
                     padding: "10px",
                     margin: "5px",
-                    backgroundColor: room === selectedRoomId ? "#4CAF50" : "#ddd",
+                    backgroundColor:
+                      room === selectedRoomId ? "#4CAF50" : "#ddd",
                     color: room === selectedRoomId ? "white" : "black",
                     border: "none",
                     borderRadius: "5px",
@@ -183,6 +235,37 @@ const App = () => {
       <div style={{ width: "65%", paddingLeft: "20px" }}>
         <h1>Teleparty Chat App</h1>
         {userId && <div>User Id: {userId}</div>}
+
+        {userIcon && (
+          <div>
+            <h3>Uploaded Icon:</h3>
+            <img
+              src={userIcon}
+              alt="User Icon"
+              style={{ width: 100, height: 100, borderRadius: "50%" }}
+            />
+          </div>
+        )}
+
+        <div>
+          <h2>User Profile</h2>
+
+          {/* Input for file upload */}
+          <input type="file" accept="image/*" onChange={handleImageUpload} />
+
+          {/* Show the uploaded image */}
+          {userIcon && (
+            <div>
+              <h3>Uploaded Icon:</h3>
+              <img
+                src={userIcon}
+                alt="User Icon"
+                style={{ width: 100, height: 100, borderRadius: "50%" }}
+              />
+            </div>
+          )}
+        </div>
+
         {!nickname ? (
           <button
             onClick={handleSetNickname}
@@ -241,7 +324,9 @@ const App = () => {
             <h3>
               Users Count: {userList.length}
               {userList.map((user, index) => (
-                <div key={index}>{user.userSettings?.userNickname || "Unknown User"}</div>
+                <div key={index}>
+                  {user.userSettings?.userNickname || "Unknown User"}
+                </div>
               ))}
             </h3>
             <div
@@ -261,7 +346,21 @@ const App = () => {
                   }}
                 >
                   <strong>
-                    {msg.nickname}: {msg.message} ---- <sub>{msg.time}</sub>
+                    {msg.isSystemMessage ? (
+                      <div
+                        style={{
+                          backgroundColor: "#dfdfdf",
+                          padding: "5px 10px",
+                          borderRadius: "5px",
+                        }}
+                      >
+                        {msg.nickname}: {msg.message} ---- <sub>{msg.time}</sub>
+                      </div>
+                    ) : (
+                      <div>
+                        {msg.nickname}: {msg.message} ---- <sub>{msg.time}</sub>
+                      </div>
+                    )}
                   </strong>
                 </div>
               ))}
