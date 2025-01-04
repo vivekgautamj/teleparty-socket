@@ -1,5 +1,5 @@
 # Project Demo 
-[Watch the video on Jumpshare](https://jumpshare.com/s/bDDP3ljla9NMTaq67CQE)
+[Demo video ](https://jumpshare.com/s/bDDP3ljla9NMTaq67CQE)
 
 
 # Project Details 
