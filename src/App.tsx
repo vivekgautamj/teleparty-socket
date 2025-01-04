@@ -17,22 +17,19 @@ interface Message {
   isSystemMessage: boolean;
   time: string;
   timestamp: string;
-  icon?: string; // Optional user icon for message
+  icon?: string;
 }
 
 const App = () => {
   const [nickname, setNickname] = useState<string | null>(null);
   const [roomIds, setRoomIds] = useState<string[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]); // Type the messages state correctly
-  const [joinRoomId, setJoinRoomId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const [userList, setUserList] = useState<User[]>([]); // Type the userList state correctly
+  const [userList, setUserList] = useState<User[]>([]);
   const [typing, setTyping] = useState<boolean>(false);
-  const [userIcon, setUserIcon] = useState<string | null>(null);
 
-  // Use a ref to store the client instance
   const clientRef = useRef<TelepartyClient | null>(null);
 
   useEffect(() => {
@@ -52,17 +49,17 @@ const App = () => {
             break;
           }
           case "userList": {
-            setUserList(data as User[]); // Cast the data to User[]
+            setUserList(data as User[]);
             break;
           }
           case "sendMessage": {
             const msgPayload: Message = {
               message: data.body,
-              nickname: data.userNickname,
+              nickname: data.userNickname || "Unknown User", // Handle undefined
               isSystemMessage: data.isSystemMessage,
               time: new Date(data.timestamp).toLocaleString(),
-              timestamp: data.timestamp, // Ensure timestamp is set
-              icon: data.userIcon || "", // Use default empty string if icon is undefined
+              timestamp: data.timestamp,
+              icon: data.userIcon || "", // Handle undefined icon
             };
             setMessages((prevMessages) => [...prevMessages, msgPayload]);
             break;
@@ -80,7 +77,7 @@ const App = () => {
     clientRef.current = new TelepartyClient(eventHandler);
 
     return () => {
-      clientRef.current?.teardown(); // Clean up connection on unmount
+      clientRef.current?.teardown();
     };
   }, []);
 
@@ -102,28 +99,25 @@ const App = () => {
   const joinRoom = async (roomId: string) => {
     if (roomId && clientRef.current && nickname) {
       setSelectedRoomId(roomId);
-      setMessages([]); // Clear previous messages
-
+      setMessages([]); // Clear previous messages when joining a new room.
+  
       try {
-        // Call joinChatRoom and store the result in 'oldMessages'
         const oldMessages = await clientRef.current.joinChatRoom(nickname, roomId);
-
-        // Check if oldMessages is an array before mapping
-        console.log("<>",oldMessages.messages)
+  
         if (Array.isArray(oldMessages.messages)) {
-          const previousMsgs = oldMessages.messages.map(
-            (msg) => {
-              return {
-                message: msg.body,
-                nickname: msg.userNickname,
-                isSystemMessage: msg.isSystemMessage,
-                time: new Date(msg.timestamp).toLocaleString(),
-                timestamp: msg.timestamp,
-                icon: msg.userIcon || "", // Use default empty string if icon is undefined
-              };
-            }
-          );
-          // Flatten and update messages
+          const previousMsgs: Message[] = oldMessages.messages.map((msg) => {
+            return {
+              message: msg.body,
+              nickname: msg.userNickname || "Unknown User", // Fallback to "Unknown User" if userNickname is undefined
+              isSystemMessage: msg.isSystemMessage,
+              time: new Date(msg.timestamp).toLocaleString(),
+              timestamp: new Date(msg.timestamp).toString(), // Convert timestamp to string
+              icon: msg.userIcon || "", // Use default empty string if icon is undefined
+            };
+          });
+          
+  
+          // Explicitly typing the previousMsgs as an array of Message to avoid type inference issues
           setMessages((prevMessages) => [...prevMessages, ...previousMsgs]);
         } else {
           console.error("Expected an array of messages, but got:", oldMessages);
@@ -131,11 +125,11 @@ const App = () => {
       } catch (error) {
         console.error("Error joining room:", error);
       }
-      setJoinRoomId(roomId);
     } else {
       console.log("Nickname and Room ID are required to join a room.");
     }
   };
+  
 
   const handleSendMessage = (setTypingPresence = false) => {
     if (
@@ -152,7 +146,6 @@ const App = () => {
     const message = {
       body: setTypingPresence ? "" : messageInput,
       isSystemMessage: setTypingPresence,
-      userIcon,
     };
 
     const typeOfMessage = setTypingPresence
@@ -187,7 +180,6 @@ const App = () => {
         padding: "20px",
       }}
     >
-      {/* Left Panel - Room List */}
       <div
         style={{
           width: "30%",
@@ -224,21 +216,9 @@ const App = () => {
         </ul>
       </div>
 
-      {/* Right Panel - Chat */}
       <div style={{ width: "65%", paddingLeft: "20px" }}>
         <h1>Teleparty Chat App</h1>
         {userId && <div>User Id: {userId}</div>}
-
-        {userIcon && (
-          <div>
-            <h3>Uploaded Icon:</h3>
-            <img
-              src={userIcon}
-              alt="User Icon"
-              style={{ width: 100, height: 100, borderRadius: "50%" }}
-            />
-          </div>
-        )}
 
         {!nickname ? (
           <button
